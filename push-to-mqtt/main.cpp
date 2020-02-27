@@ -2,9 +2,6 @@
 #include <MQTTClientMbedOs.h>
 
 DigitalOut led(LED1);
-InterruptIn button(USER_BUTTON);
-Thread t;
-EventQueue queue(5 * EVENTS_EVENT_SIZE);
 Serial pc(USBTX, USBRX);
 
 WiFiInterface *wifi;
@@ -16,14 +13,13 @@ uint16_t  port = 1883;
 
 SocketAddress socketAddr(hostname, port);
 
-const char* mqtt_client = "10b7201e-f3e8-44d3-976f-6b4748194c41";
-const char* mqtt_username = "ridwJi5E8yyRrYcktLG5d3sdL5jfs1a7";
-const char* mqtt_password = ".*P7j63elKqV0*kaALxgxESmq5dnLA*J";
+const char* mqtt_client = "4665fab9-4827-40de-a1a6-36e538463bc4";
+const char* mqtt_username = "CXhbMLgUwHFZWKdt77AHEVAgio42f3k7";
+const char* mqtt_password = "zdsj67RATuG~~QftY+Y8XY_TS2XCtmEE";
 
 const char* topic = "ICT710";
 
 MQTT::Message message;
-
 
 void  connect_wifi() {
     wifi = WiFiInterface::get_default_instance();
@@ -56,22 +52,9 @@ void  connect_wifi() {
 }
 
 void connect_netpie() {
-    socket.open(wifi);
-    socket.connect(socketAddr);
 
-    MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
     
-    data.clientID.cstring = (char *)mqtt_client;
-    data.username.cstring = (char *)mqtt_username;
-    data.password.cstring = (char *)mqtt_password;
-    pc.printf("Connecting to NETPIE...\n\r");
-    while(!client.isConnected()) 
-        client.connect(data);
-    pc.printf("Success\n\n\r");
-
 }
-
-
 
 int main() {
 
@@ -79,7 +62,26 @@ int main() {
     
     connect_wifi();
 
-    connect_netpie();
+    //connect_netpie();
+
+    int result;
+    socket.open(wifi);
+    wifi->gethostbyname(hostname, &socketAddr);
+    socketAddr.set_port(port);
+    if((result=socket.connect(socketAddr))!=0) {
+        pc.printf("Error socket.connect() returned: %d\n\r", result);
+    }
+
+    MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
+    
+    data.clientID.cstring = (char *)mqtt_client;
+    data.username.cstring = (char *)mqtt_username;
+    //data.password.cstring = (char *)mqtt_password;
+    pc.printf("Connecting to NETPIE...\n\r");
+    while(!client.isConnected()) {
+        client.connect(data);
+    }
+    pc.printf("Success\n\n\r");
 
     char buf[100];
     sprintf(buf, "Hello NETPIE2020");
@@ -93,9 +95,10 @@ int main() {
         client.publish(topic, message);
         pc.printf("Published topic: %s\tmsg:%s\n\r", topic, buf);
         led = !led;
-        ThisThread::sleep_for(500);
+        ThisThread::sleep_for(1000);
     }
 
     return 0;
+
 }
 
