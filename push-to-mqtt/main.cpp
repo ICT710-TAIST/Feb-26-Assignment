@@ -53,18 +53,8 @@ void  connect_wifi() {
 
 void connect_netpie() {
 
-    
-}
-
-int main() {
-
-    pc.printf("Starting\n\r");
-    
-    connect_wifi();
-
-    //connect_netpie();
-
     int result;
+
     socket.open(wifi);
     wifi->gethostbyname(hostname, &socketAddr);
     socketAddr.set_port(port);
@@ -77,14 +67,47 @@ int main() {
     data.clientID.cstring = (char *)mqtt_client;
     data.username.cstring = (char *)mqtt_username;
     //data.password.cstring = (char *)mqtt_password;
-    pc.printf("Connecting to NETPIE...\n\r");
-    while(!client.isConnected()) {
+    pc.printf("Connecting to Broker...\n\r");
+    while(!client.isConnected())
         client.connect(data);
-    }
     pc.printf("Success\n\n\r");
+
+}
+
+void pressedHandler(){
+
+    connect_wifi();
+    connect_netpie();
 
     char buf[100];
     sprintf(buf, "Hello NETPIE2020");
+
+    message.qos = MQTT::QOS0;
+    message.retained = false;
+    message.dup = false;
+    message.payload = (void*)buf;
+    message.payloadlen = strlen(buf)+1;
+
+    while(1) {
+        client.publish(topic, message);
+        pc.printf("Published topic: %s\tmsg:%s\n\r", topic, buf);
+        led = !led;
+        ThisThread::sleep_for(1000);
+    }
+
+}
+
+int main() {
+
+    pc.printf("Starting\n\r");
+    
+    connect_wifi();
+
+    connect_netpie();
+
+    char buf[100];
+    sprintf(buf, "Hello NETPIE2020");
+
     message.qos = MQTT::QOS0;
     message.retained = false;
     message.dup = false;
@@ -101,4 +124,3 @@ int main() {
     return 0;
 
 }
-
