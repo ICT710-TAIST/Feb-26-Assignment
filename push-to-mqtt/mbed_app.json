@@ -2,11 +2,11 @@
     "config": {
         "wifi-ssid": {
             "help": "WiFi SSID",
-            "value": "\"true_home2G_454\""
+            "value": "\"Sangrit's iPhone\""
         },
         "wifi-password": {
             "help": "WiFi Password",
-            "value": "\"XXMYPH4K\""
+            "value": "\"qwertyuiop\""
         }
     },
     "target_overrides": {

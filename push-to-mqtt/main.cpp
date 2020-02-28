@@ -2,31 +2,32 @@
 #include <MQTTClientMbedOs.h>
 
 DigitalOut led(LED1);
-InterruptIn button(USER_BUTTON);
-Thread t;
-EventQueue queue(5 * EVENTS_EVENT_SIZE);
 Serial pc(USBTX, USBRX);
+
+InterruptIn button(USER_BUTTON);
 
 WiFiInterface *wifi;
 TCPSocket socket;
 MQTTClient client(&socket);
 
+Thread thread;
+EventQueue queue(5 * EVENTS_EVENT_SIZE);
+
 const char* hostname = "mqtt.netpie.io"; 
 uint16_t  port = 1883;
 
-SocketAddress socketAddr(hostname, port);
+const char* mqtt_client = "4665fab9-4827-40de-a1a6-36e538463bc4";
+const char* mqtt_username = "CXhbMLgUwHFZWKdt77AHEVAgio42f3k7";
+const char* mqtt_password = "zdsj67RATuG~~QftY+Y8XY_TS2XCtmEE";
 
-const char* mqtt_client = "10b7201e-f3e8-44d3-976f-6b4748194c41";
-const char* mqtt_username = "ridwJi5E8yyRrYcktLG5d3sdL5jfs1a7";
-const char* mqtt_password = ".*P7j63elKqV0*kaALxgxESmq5dnLA*J";
-
-const char* topic = "ICT710";
+const char* topic = "@msg/ICT710";
 
 MQTT::Message message;
 
-
 void  connect_wifi() {
+
     wifi = WiFiInterface::get_default_instance();
+
     if (!wifi) {
         printf("ERROR: No WiFiInterface found.\n");
         return;
@@ -41,48 +42,49 @@ void  connect_wifi() {
     }
 
     pc.printf("Success\n\n\r");
-    pc.printf("MAC: %s\n\r", wifi->get_mac_address());
-    SocketAddress a;
-    wifi->get_ip_address(&a);
-    pc.printf("IP: %s\n\r", a.get_ip_address());
-    wifi->get_netmask(&a);
-    pc.printf("Netmask: %s\n\r", a.get_ip_address());
-    wifi->get_gateway(&a);
-    pc.printf("Gateway: %s\n\r", a.get_ip_address());
-    pc.printf("RSSI: %d\n\n\r", wifi->get_rssi());
+    printf("MAC: %s\n\r", wifi->get_mac_address());
+    printf("IP: %s\n\r", wifi->get_ip_address());
+    printf("Netmask: %s\n\r", wifi->get_netmask());
+    printf("Gateway: %s\n\r", wifi->get_gateway());
+    printf("RSSI: %d\n\n\r", wifi->get_rssi());   
 
     //wifi->disconnect();
-    //pc.printf("\nDone\n");    
+    //pc.printf("\n\rDone\n\r");    
 }
 
 void connect_netpie() {
+
+    int result;
+
     socket.open(wifi);
-    socket.connect(socketAddr);
+    if((result=socket.connect(hostname, port))!=0) {
+        pc.printf("Error socket.connect() returned: %d\n\r", result);
+    }
 
     MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
     
     data.clientID.cstring = (char *)mqtt_client;
     data.username.cstring = (char *)mqtt_username;
-    data.password.cstring = (char *)mqtt_password;
-    pc.printf("Connecting to NETPIE...\n\r");
-    while(!client.isConnected()) 
+    //data.password.cstring = (char *)mqtt_password;
+    pc.printf("Connecting to Broker...\n\r");
+    client.connect(data);
+    /*
+    while(!client.isConnected())
         client.connect(data);
     pc.printf("Success\n\n\r");
+    */
 
 }
 
+void pressed_handler(){
 
-
-int main() {
-
-    pc.printf("Starting\n\r");
-    
     connect_wifi();
 
     connect_netpie();
 
     char buf[100];
     sprintf(buf, "Hello NETPIE2020");
+
     message.qos = MQTT::QOS0;
     message.retained = false;
     message.dup = false;
@@ -92,10 +94,17 @@ int main() {
     while(1) {
         client.publish(topic, message);
         pc.printf("Published topic: %s\tmsg:%s\n\r", topic, buf);
+        ThisThread::sleep_for(1000);
+    }
+
+}
+
+int main() {
+    thread.start(callback(&queue, &EventQueue::dispatch_forever));
+    button.fall(queue.event(pressed_handler));
+    pc.printf("Starting\n\r");
+    while(1) {
         led = !led;
         ThisThread::sleep_for(500);
     }
-
-    return 0;
 }
-
