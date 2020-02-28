@@ -82,7 +82,8 @@ void connect_mqtt() {
     sprintf(endpoint, "%s/%s", hostname, topic);
     sprintf(auth, "Device %s:%s", mqtt_client, mqtt_username);
     
-    pc.printf("PUT %s\n\r", endpoint);
+    pc.printf("PUT to %s\n\r", endpoint);
+    //pc.printf("Authorization: %s", auth);
 
     HttpsRequest* request = new HttpsRequest(wifi, SSL_CA_PEM, HTTP_PUT, endpoint);
 
@@ -90,16 +91,16 @@ void connect_mqtt() {
     request->set_header("Content-type", "text/plain");
 
     const char* body = "Hello NETPIE2020";
- 
+
     HttpResponse* response = request->send(body, strlen(body));
 
-    printf("status is %d\n\r", response->get_status_code());
+    printf("status is %d - %s\n\r", response->get_status_code(), response->get_status_message());
     printf("body is:\n%s\n\r", response->get_body());
 
     delete request;// also clears out the response
 
-    wifi->disconnect();
-    pc.printf("\nDone\n\r");
+    //wifi->disconnect();
+    //pc.printf("\nDone\n\r");
 
 }
 
@@ -108,7 +109,10 @@ void pressed_handler(){
     // Connect to network interface
     connect_wifi();
     // Put a message to MQTT Broker
-    connect_mqtt();
+    while(true) {
+        connect_mqtt();
+        ThisThread::sleep_for(1000);
+    }
 }
 
 int main() {
